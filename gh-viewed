@@ -1,0 +1,7 @@
+#!/usr/bin/env node
+
+// CommonJS shim: `gh extension install` and npm `bin` run it without `"type": "module"`.
+const { join } = require("node:path");
+const { pathToFileURL } = require("node:url");
+
+import(pathToFileURL(join(__dirname, "src", "cli.mjs")).href);

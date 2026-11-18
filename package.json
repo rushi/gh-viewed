@@ -1,0 +1,34 @@
+{
+  "name": "gh-viewed",
+  "version": "1.0.0",
+  "description": "Mark files in a GitHub pull request as viewed by glob, folder, extension, or preset",
+  "keywords": [
+    "github",
+    "gh",
+    "gh-extension",
+    "pull-request",
+    "code-review",
+    "viewed"
+  ],
+  "homepage": "https://github.com/rushi/gh-viewed#readme",
+  "bugs": "https://github.com/rushi/gh-viewed/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rushi/gh-viewed.git"
+  },
+  "license": "MIT",
+  "author": "Rushi Vishavadia",
+  "bin": {
+    "gh-viewed": "gh-viewed"
+  },
+  "files": [
+    "gh-viewed",
+    "src"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}
