@@ -136,3 +136,31 @@ describe("combining patterns", () => {
         assert.deepEqual(select("!src/**", "!tests"), [".github/workflows/ci.yml", "README.md", "Makefile", "package.json", "pnpm-lock.yaml"]);
     });
 });
+
+describe("forcing a path", () => {
+    const files = ["ci/run.sh", "types/index.ts", ".github/workflows/ci.yml", "config.json", "src/config.json"];
+    const pick = (...patterns) => files.filter(createFilter(patterns));
+
+    it("reaches a folder named like a preset with a trailing slash or leading ./", () => {
+        assert.deepEqual(pick("ci/"), ["ci/run.sh"]);
+        assert.deepEqual(pick("./ci"), ["ci/run.sh"]);
+        assert.deepEqual(pick("./types"), ["types/index.ts"]);
+    });
+
+    it("still applies the preset to a bare name", () => {
+        assert.deepEqual(pick("ci"), [".github/workflows/ci.yml"]);
+    });
+
+    it("anchors a ./ glob to the repo root", () => {
+        assert.deepEqual(pick("./*.json"), ["config.json"]);
+        assert.deepEqual(pick("*.json"), ["config.json", "src/config.json"]);
+    });
+});
+
+describe("negated character classes", () => {
+    it("never match a path separator", () => {
+        assert.ok(!globToRegex("src/a[!x]b.ts").test("src/a/b.ts"));
+        assert.ok(!globToRegex("src/a[^x]b.ts").test("src/a/b.ts"));
+        assert.ok(globToRegex("src/a[!x]b.ts").test("src/a-b.ts"));
+    });
+});

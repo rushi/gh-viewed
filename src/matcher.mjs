@@ -39,7 +39,7 @@ export const globToRegex = (glob) => {
         } else if (char === "[") {
             const end = glob.indexOf("]", index + 1);
             const hasClosingBracket = end !== -1;
-            source += hasClosingBracket ? glob.slice(index, end + 1).replace(/^\[!/, "[^") : "\\[";
+            source += hasClosingBracket ? glob.slice(index, end + 1).replace(/^\[[!^]/, "[^/") : "\\[";
             index = hasClosingBracket ? end : index;
         } else if (char === "{") {
             braceDepth++;
@@ -57,21 +57,27 @@ export const globToRegex = (glob) => {
     return new RegExp(`^${source}$`);
 };
 
-/** Forms are checked in order: preset, glob, path (contains "/"), then bare word (extension or exact file name) */
+/**
+ * Forms are checked in order: preset, glob, path (contains "/"), then bare word (extension or exact file name).
+ * A leading "./" or trailing "/" forces a path, so a folder named like a preset stays reachable.
+ */
 const toMatcher = (rawPattern) => {
+    const isRooted = rawPattern.startsWith("./");
+    const isForcedPath = isRooted || rawPattern.endsWith("/");
     const pattern = rawPattern.replace(/^\.\//, "");
     const presetName = pattern.toLowerCase();
-    if (Object.hasOwn(PRESETS, presetName)) {
+    const isPreset = !isForcedPath && Object.hasOwn(PRESETS, presetName);
+    if (isPreset) {
         return (path) => PRESETS[presetName].test(path);
     }
 
     if (GLOB_CHARS.test(pattern)) {
         const regex = globToRegex(pattern);
-        const isBasenameGlob = !pattern.includes("/");
+        const isBasenameGlob = !isRooted && !pattern.includes("/");
         return (path) => regex.test(isBasenameGlob ? getBasename(path) : path);
     }
 
-    if (pattern.includes("/")) {
+    if (isForcedPath || pattern.includes("/")) {
         const dir = pattern.endsWith("/") ? pattern : `${pattern}/`;
         return (path) => path === pattern || path.startsWith(dir);
     }
