@@ -4,4 +4,9 @@
 const { join } = require("node:path");
 const { pathToFileURL } = require("node:url");
 
-import(pathToFileURL(join(__dirname, "src", "cli.mjs")).href);
+const cliUrl = pathToFileURL(join(__dirname, "src", "cli.mjs")).href;
+
+import(cliUrl).catch((error) => {
+    console.error(`gh-viewed: ${error.message} (requires Node >= 18.18)`);
+    process.exitCode = 1;
+});

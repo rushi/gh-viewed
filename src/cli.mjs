@@ -22,12 +22,13 @@ Mark files in a GitHub pull request as viewed, picked by glob, folder, extension
 Usage
   gh viewed [pr] <pattern...> [options]
 
-  pr    PR number or URL. Omitted: the open PR for the current branch.
+  pr    PR number or URL, in any position. Omitted: your open PR for the current branch.
 
 Patterns (a file is changed when it matches any include and no exclude)
   tests                 preset: ${Object.keys(PRESETS).join(", ")}
   json, .json           extension (or exact file name, e.g. Makefile)
   src/components        folder and everything under it, or one exact file
+  ci/, ./ci             trailing "/" or leading "./" forces a path, even for a preset name
   'src/**/*.ts'         glob; a glob without "/" matches the file name at any depth
   '!src/legacy/'        exclude; takes any form above
 
@@ -53,7 +54,10 @@ const isPrSelector = (value) => /^\d+$/.test(value) || isPrUrl(value);
 const parseCli = () => {
     const { values, positionals } = parseArgs({ options: OPTIONS, allowPositionals: true, strict: true });
     const { unmark, "dry-run": dryRun, repo, help, version: showVersion } = values;
-    const hasSelector = positionals.length > 0 && isPrSelector(positionals[0]);
+    const selectors = positionals.filter(isPrSelector);
+    if (selectors.length > 1) {
+        throw new Error(`Pass one PR, got ${selectors.join(", ")}`);
+    }
 
     return {
         repo,
@@ -61,8 +65,8 @@ const parseCli = () => {
         isUnmark: Boolean(unmark),
         isDryRun: Boolean(dryRun),
         isVersion: Boolean(showVersion),
-        selector: hasSelector ? positionals[0] : undefined,
-        patterns: hasSelector ? positionals.slice(1) : positionals,
+        selector: selectors[0],
+        patterns: positionals.filter((value) => !isPrSelector(value)),
     };
 };
 
@@ -97,7 +101,7 @@ const run = async () => {
     const matched = files.filter(({ path }) => isMatch(path));
     const pending = matched.filter(needsChange).map(({ path }) => path);
 
-    const { owner, repo: name, number, id } = pullRequest;
+    const { owner, repo: name, number } = pullRequest;
     const summary = `${owner}/${name}#${number}: ${files.length} files, ${matched.length} matched, ${pending.length} to change`;
     console.log(color.dim(summary));
 
@@ -107,7 +111,7 @@ const run = async () => {
     }
 
     const onDone = printPaths(color.green("✓"), verb);
-    const failures = await setViewed({ pullRequestId: id, paths: pending, isUnmark, onDone });
+    const failures = await setViewed({ pullRequest, paths: pending, isUnmark, onDone });
     if (failures.length > 0) {
         printFailures(failures);
         process.exitCode = 1;
