@@ -13,7 +13,7 @@ gh viewed --unmark docs            # flip docs back to not viewed
 
 ## Install
 
-Requires [GitHub CLI](https://cli.github.com) (`gh auth login` done) and Node.js 18.18 or newer. No npm dependencies.
+Requires [GitHub CLI](https://cli.github.com), logged in with `gh auth login`, and Node.js 18.18 or newer. No npm dependencies.
 
 **As a `gh` extension** (run as `gh viewed`):
 
@@ -36,7 +36,9 @@ npx gh-viewed tests
 gh viewed [pr] <pattern...> [options]
 ```
 
-`pr` is a PR number or URL. Leave it out to use the open PR for the current branch. In a fork, the PR is looked up on the upstream repo.
+`pr` is a PR number or URL, in any position (`gh viewed tests 1234` works). GitHub Enterprise Server URLs work too, given a `gh auth login --hostname` for that host.
+
+Leave `pr` out to use the open PR for the current branch. In a fork, the PR is looked up on the upstream repo. Only a PR whose branch lives in the base repo or in your own fork counts, so a branch named `main` or `patch-1` never picks up a stranger's PR. On a detached HEAD, pass the PR explicitly.
 
 | Option                     | Description                                               |
 | -------------------------- | --------------------------------------------------------- |
@@ -50,17 +52,17 @@ Files already in the requested state are skipped, so running the same command tw
 
 ## Patterns
 
-Pass any number of patterns. A file changes when it matches at least one include and no exclude. Each pattern is read as the first form below that fits:
+Pass any number of patterns. A file changes when it matches at least one include and no exclude. Each pattern is read as the first form below that fits, except that a trailing `/` or leading `./` always means a path.
 
 | Form       | Example                                  | Matches                                                                 |
 | ---------- | ---------------------------------------- | ----------------------------------------------------------------------- |
 | Preset     | `tests`                                  | A named group of files, see below. Case-insensitive.                    |
-| Glob       | `'src/**/*.ts'`, `'*.{yml,yaml}'`        | Globs with a `/` match from the repo root. Without one, they match the file name at any depth. |
-| Path       | `src/components`, `src/components/`      | That folder and everything under it, or that exact file.                |
-| Extension  | `json`, `.json`                          | Files ending in `.json`, case-insensitive. Also a file named exactly `json`, so `Makefile` works too. |
+| Glob       | `'src/**/*.ts'`, `'*.{yml,yaml}'`        | Globs with a `/` match from the repo root. Without one, they match the file name at any depth; `'./*.json'` limits to the root. |
+| Path       | `src/components`, `src/components/`, `./ci` | That folder and everything under it, or that exact file. `ci/` and `./ci` mean the `ci` folder, not the preset. |
+| Extension  | `json`, `.json`                          | Files ending in `.json`, case-insensitive. A bare word also matches a file with that exact name, such as `Makefile`. |
 | Exclude    | `'!src/legacy/'`, `'!*.snap'`, `'!tests'` | A `!` prefix on any form above removes matches.                        |
 
-Only excludes, no includes: everything else in the PR is matched. `gh viewed '!src/**'` marks every file outside `src/`.
+With only excludes, every other file in the PR matches. `gh viewed '!src/**'` marks every file outside `src/`.
 
 Glob syntax: `*` (within one folder), `**` (any depth), `?`, `[abc]`, `[!abc]`, `{a,b}`.
 
